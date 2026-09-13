@@ -1,74 +1,85 @@
 // padronizei os arrays pra um so
-let listaDeVoos = [];
+let listaDeVoos = JSON.parse(localStorage.getItem("diario_de_voos")) || [];
 
-// ========================================================
-// DESAFIO 1: O BOOT DO SISTEMA (Carregando a Caixa-Preta)
-// ========================================================
-// 1. Tenta buscar os voos salvos no disco com o nome "diario_de_voos"
-let voosSalvos = localStorage.getItem("diario_de_voos");
-
-if (voosSalvos !== null) {
-    // Se achou algo no disco, converte de TEXTO (JSON) de volta para ARRAY DE OBJETOS!
-    listaDeVoos = JSON.parse(voosSalvos);
-} else {
-    // Se for a primeira vez que o sistema roda, começa com um array vazio.
-    listaDeVoos = [];
+if (listaDeVoos.length == 0) {
+    localStorage.setItem("diario_de_voos", JSON.stringify(listaDeVoos));
 }
 
 const tela = document.getElementById("telaDoAeroporto");
+const formulario = document.getElementById("formDespacho");
+const campoCodigo = document.getElementById("inputCodigo");
+const campoDestino = document.getElementById("inputDestino");
+
+function salvarNoDiscoERenderizar() {
+    localStorage.setItem("diario_de_voos", JSON.stringify(listaDeVoos));
+    atualizarPainel();
+}
+
+function cancelarVoo(codigoAlvo) {
+    listaDeVoos = listaDeVoos.filter((voo) => voo.codigo !== codigoAlvo);
+    salvarNoDiscoERenderizar();
+}
+
+function alterarPortao(codigoAlvo, novoPortao) {
+    let index = listaDeVoos.findIndex((voo) => voo.codigo === codigoAlvo);
+
+    if (index !== -1) {
+        listaDeVoos[index].portao = novoPortao;
+        salvarNoDiscoERenderizar();
+    }
+}
 
 function atualizarPainel() {
-    tela.innerHTML = "";
+    tela.innerHTML = ""; 
 
     listaDeVoos.forEach(voo => {
         let novoCard = document.createElement("div");
         novoCard.classList.add("card-voo");
+        
+        let portaoExibicao = voo.portao ? voo.portao : "Não definido";
 
         novoCard.innerHTML = `
             <h3>Voo ${voo.codigo} - Destino: ${voo.destino}</h3>
             <p>Status: ${voo.status}</p>
+            <p>Portão: ${portaoExibicao}</p>
         `;
 
-        let botaoDecolar = document.createElement("button");
-        botaoDecolar.classList.add("botao-decolar");
-        botaoDecolar.innerText = "Decolar";
-        botaoDecolar.addEventListener("click", () => {
-            alert(`O voo ${voo.codigo} decolou!`);
+        let btnCancelar = document.createElement("button");
+        btnCancelar.innerText = "Cancelar Voo";
+        btnCancelar.style.background = "red";
+        btnCancelar.addEventListener("click", function() {
+            if (confirm(`Tem certeza que deseja cancelar o voo ${voo.codigo}?`)) {
+                cancelarVoo(voo.codigo);
+            }
         });
-        novoCard.appendChild(botaoDecolar);
+    
+        let btnPortao = document.createElement("button");
+        btnPortao.innerText = "Mudar portão";
+        btnPortao.addEventListener("click", function() {
+            let novo = prompt("Digite o novo número do portão:");
+            if (novo) alterarPortao(voo.codigo, novo);
+        });
 
+        novoCard.appendChild(btnPortao);
+        novoCard.appendChild(btnCancelar);
         tela.appendChild(novoCard);
     });
 }
 
-// Executa a função que já criamos para desenhar a tela
-atualizarPainel();
-
-// ========================================================
-// DESAFIO 2: SALVANDO UM NOVO VOO (Gravando na Caixa-Preta)
-// ========================================================
-const formulario = document.getElementById("formDespacho");
-
 formulario.addEventListener("submit", function(evento) {
-    evento.preventDefault(); // Impede o F5 que já fizemos!
+    evento.preventDefault();
 
-    let codigoDigitado = document.getElementById("inputCodigo").value;
-    let destinoDigitado = document.getElementById("inputDestino").value;
-
-    let novoVoo = { codigo: codigoDigitado, destino: destinoDigitado, status: "Embarque" };
-
-    // Adiciona na RAM (Array)
+    let novoVoo = { 
+        codigo: campoCodigo.value, 
+        destino: campoDestino.value, 
+        status: "Embarque"
+    };
+    
     listaDeVoos.push(novoVoo);
-
-    // O LocalStorage SÓ ACEITA TEXTO. Não podemos salvar um Array/Objeto direto.
-    // 1. Converte o array 'listaDeVoos' em um Texto JSON:
-    let arrayConvertidoEmTexto = JSON.stringify(listaDeVoos);
-
-    // 2. Salva esse texto no LocalStorage com a "chave" (nome) de "diario_de_voos":
-    localStorage.setItem("diario_de_voos", arrayConvertidoEmTexto);
-
-    // Atualiza a tela visualmente e limpa o formulário
-    atualizarPainel();
-    document.getElementById("inputCodigo").value = "";
-    document.getElementById("inputDestino").value = "";
+    salvarNoDiscoERenderizar();
+    
+    campoCodigo.value = "";
+    campoDestino.value = "";
 });
+
+atualizarPainel();
