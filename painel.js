@@ -1,33 +1,34 @@
-// Simulando os dados que vieram do Radar (Array de Objetos)
-const listaDeVoos = [
-    { codigo: "G3-100", destino: "São Paulo", status: "Embarque", portao: "01" },
-    { codigo: "LA-200", destino: "Rio de Janeiro", status: "Atrasado", portao: "04" },
-    { codigo: "AD-300", destino: "Campinas", status: "Confirmado", portao: "02" }
-];
+// padronizei os arrays pra um so
+let listaDeVoos = [];
 
-// Capturamos a div vazia do HTML onde os voos devem aparecer
+// ========================================================
+// DESAFIO 1: O BOOT DO SISTEMA (Carregando a Caixa-Preta)
+// ========================================================
+// 1. Tenta buscar os voos salvos no disco com o nome "diario_de_voos"
+let voosSalvos = localStorage.getItem("diario_de_voos");
+
+if (voosSalvos !== null) {
+    // Se achou algo no disco, converte de TEXTO (JSON) de volta para ARRAY DE OBJETOS!
+    listaDeVoos = JSON.parse(voosSalvos);
+} else {
+    // Se for a primeira vez que o sistema roda, começa com um array vazio.
+    listaDeVoos = [];
+}
+
 const tela = document.getElementById("telaDoAeroporto");
 
-// DESAFIO 1: A Função de Renderização Dinâmica
 function atualizarPainel() {
-    // Passo 1: Limpar a tela antes de desenhar, para não duplicar os voos
     tela.innerHTML = "";
 
-    // Passo 2: Percorrer o Array
     listaDeVoos.forEach(voo => {
-        // 1. Cria o elemento <div>
         let novoCard = document.createElement("div");
-
-        // 2. Coloca a classe CSS "card-voo" nessa div
         novoCard.classList.add("card-voo");
 
-        // 3. Coloca o texto do voo dentro da div (Template String)
         novoCard.innerHTML = `
             <h3>Voo ${voo.codigo} - Destino: ${voo.destino}</h3>
-            <p>Status: ${voo.status} | Portão: ${voo.portao}</p>
+            <p>Status: ${voo.status}</p>
         `;
 
-        // DESAFIO 2: Botão de decolar com evento de clique
         let botaoDecolar = document.createElement("button");
         botaoDecolar.classList.add("botao-decolar");
         botaoDecolar.innerText = "Decolar";
@@ -36,45 +37,38 @@ function atualizarPainel() {
         });
         novoCard.appendChild(botaoDecolar);
 
-        // 4. Prende essa nova div dentro da "tela"
         tela.appendChild(novoCard);
     });
 }
 
-// Executando a função para desenhar a tela inicial
+// Executa a função que já criamos para desenhar a tela
 atualizarPainel();
 
-// 1. Capturando o Formulário e os Campos de Texto
+// ========================================================
+// DESAFIO 2: SALVANDO UM NOVO VOO (Gravando na Caixa-Preta)
+// ========================================================
 const formulario = document.getElementById("formDespacho");
-const campoCodigo = document.getElementById("inputCodigo");
-const campoDestino = document.getElementById("inputDestino");
 
-// 2. Adicionando o "Ouvinte de Evento" no envio (submit) do formulário
 formulario.addEventListener("submit", function(evento) {
+    evento.preventDefault(); // Impede o F5 que já fizemos!
 
-    // DESAFIO 1: Impedir o recarregamento da página!
-    evento.preventDefault();
+    let codigoDigitado = document.getElementById("inputCodigo").value;
+    let destinoDigitado = document.getElementById("inputDestino").value;
 
-    // DESAFIO 2: Capturar o texto que o despachante digitou nos inputs
-    let codigoDigitado = campoCodigo.value;
-    let destinoDigitado = campoDestino.value;
+    let novoVoo = { codigo: codigoDigitado, destino: destinoDigitado, status: "Embarque" };
 
-    // DESAFIO 3: Criar um novo objeto e atualizar a tela
-    // a) Cria um novo objeto literal de Voo com os dados capturados
-    let novoVoo = {
-        codigo: codigoDigitado,
-        destino: destinoDigitado,
-        status: "Embarque",
-        portao: "TBA" // To Be Announced (A definir)
-    };
-
-    // b) Adiciona este novo voo dentro do Array 'listaDeVoos'
+    // Adiciona na RAM (Array)
     listaDeVoos.push(novoVoo);
 
-    // c) Chama a função atualizarPainel() da aula passada para desenhar a tela novamente!
-    atualizarPainel();
+    // O LocalStorage SÓ ACEITA TEXTO. Não podemos salvar um Array/Objeto direto.
+    // 1. Converte o array 'listaDeVoos' em um Texto JSON:
+    let arrayConvertidoEmTexto = JSON.stringify(listaDeVoos);
 
-    // d) Limpa os campos de texto para o próximo cadastro.
-    campoCodigo.value = "";
-    campoDestino.value = "";
+    // 2. Salva esse texto no LocalStorage com a "chave" (nome) de "diario_de_voos":
+    localStorage.setItem("diario_de_voos", arrayConvertidoEmTexto);
+
+    // Atualiza a tela visualmente e limpa o formulário
+    atualizarPainel();
+    document.getElementById("inputCodigo").value = "";
+    document.getElementById("inputDestino").value = "";
 });
